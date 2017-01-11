@@ -4,10 +4,22 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #define MAXLINE     4096    /* max text line length */
 #define LISTENQ     1024    /* 2nd argument to listen() */
-#define DAYTIME_PORT 3333
+//#define DAYTIME_PORT 3333
+int DAYTIME_PORT = 3333;
+
+int checkNumberOfArguments(int argc) {
+    if (argc != 2) {
+        printf("usage: server <portNumber>\n");
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}
 
 int
 main(int argc, char **argv)
@@ -16,6 +28,11 @@ main(int argc, char **argv)
     struct sockaddr_in servaddr;
     char    buff[MAXLINE];
     time_t ticks;
+
+    int correctNumOfArguments = checkNumberOfArguments(argc);
+    if (!correctNumOfArguments) {
+        exit(1);
+    }
 
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
 
