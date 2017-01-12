@@ -37,7 +37,7 @@ int checkPortNumber(char *arg) {
     }
 }
 
-int convertHostNameToIp(char *hostName, struct sockaddr_in servaddr ) {
+int convertHostNameToIp(char *hostName, struct sockaddr_in *servaddr ) {
     int result;
     struct addrinfo hints, *res;
     bzero(&hints,sizeof(hints));
@@ -47,13 +47,24 @@ int convertHostNameToIp(char *hostName, struct sockaddr_in servaddr ) {
     result = getaddrinfo(hostName,NULL,&hints,&res);
     if (result != 0) {
         printf("getaddrinfo: %s\n", gai_strerror(result));
+        freeaddrinfo(res);
         return -1;
     }
     else {
-        servaddr.sin_addr.s_addr = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
-        printf("resolved hostname to %s\n", inet_ntoa(servaddr.sin_addr));
+        servaddr->sin_addr.s_addr = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
+        //printf("resolved hostname to %s\n", inet_ntoa(servaddr->sin_addr));
+        printf("resolved hostname\n");
+        freeaddrinfo(res);
         return 0;
     }
+
+}
+
+void printIpAddress(struct sockaddr_in *servaddr) {
+    printf("IP Address: %s\n", inet_ntoa(servaddr->sin_addr));
+}
+
+void printServerName() {
 
 }
 
@@ -86,7 +97,7 @@ main(int argc, char **argv)
         printf("inet_pton error for %s\n", argv[1]);
         printf("trying to resolve hostname %s\n", argv[1]);
 
-        int isValidHostName = convertHostNameToIp(argv[1], servaddr);
+        int isValidHostName = convertHostNameToIp(argv[1], &servaddr);
         if (isValidHostName == -1) {
             exit(1);
         }
@@ -97,6 +108,9 @@ main(int argc, char **argv)
         exit(1);
     }
 
+    printServerName(&servaddr);
+    printIpAddress(&servaddr);
+    printf("Time: ");
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
         recvline[n] = 0;        /* null terminate */
         if (fputs(recvline, stdout) == EOF) {
