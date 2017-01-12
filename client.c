@@ -9,7 +9,32 @@
 #include <unistd.h>
 
 #define MAXLINE     4096    /* max text line length */
-#define DAYTIME_PORT 3333
+//#define DAYTIME_PORT 3333
+int DAYTIME_PORT;
+
+int checkNumberOfArguments(int argc) {
+    if (argc != 3) {
+        printf("usage: client <Ipaddress> <portNumber>\n");
+        return 0;
+    }
+    else {
+        return 1;
+    }
+}
+
+int checkPortNumber(char *arg) {
+    int port_num;
+    port_num = atoi(arg);
+    if (port_num < 1024 || port_num > 65535) {
+        printf("incorrect port number\n");
+        printf("select port between 1024 and 65535\n");
+        return 0;
+    }
+    else {
+        DAYTIME_PORT = port_num;
+        return 1;
+    }
+}
 
 int
 main(int argc, char **argv)
@@ -18,8 +43,13 @@ main(int argc, char **argv)
     char    recvline[MAXLINE + 1];
     struct sockaddr_in servaddr;
 
-    if (argc != 2) {
-        printf("usage: client <IPaddress>\n");
+    int correctNumOfArguments = checkNumberOfArguments(argc);
+    if (!correctNumOfArguments) {
+        exit(1);
+    }
+
+    int correctPortNumber = checkPortNumber(argv[2]);
+    if (!correctPortNumber) {
         exit(1);
     }
 
