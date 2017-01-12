@@ -14,11 +14,11 @@ int DAYTIME_PORT;
 
 int checkNumberOfArguments(int argc) {
     if (argc != 3) {
-        printf("usage: client <Ipaddress> <portNumber>\n");
-        return 0;
+        printf("usage: client <Ipaddress/HostName> <portNumber>\n");
+        return -1;
     }
     else {
-        return 1;
+        return 0;
     }
 }
 
@@ -28,11 +28,11 @@ int checkPortNumber(char *arg) {
     if (port_num < 1024 || port_num > 65535) {
         printf("incorrect port number\n");
         printf("select port between 1024 and 65535\n");
-        return 0;
+        return -1;
     }
     else {
         DAYTIME_PORT = port_num;
-        return 1;
+        return 0;
     }
 }
 
@@ -44,12 +44,12 @@ main(int argc, char **argv)
     struct sockaddr_in servaddr;
 
     int correctNumOfArguments = checkNumberOfArguments(argc);
-    if (!correctNumOfArguments) {
+    if (correctNumOfArguments == -1) {
         exit(1);
     }
 
     int correctPortNumber = checkPortNumber(argv[2]);
-    if (!correctPortNumber) {
+    if (correctPortNumber == -1) {
         exit(1);
     }
 
