@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <netdb.h>
 
 #define MAXLINE     4096    /* max text line length */
 //#define DAYTIME_PORT 3333
@@ -36,6 +37,26 @@ int checkPortNumber(char *arg) {
     }
 }
 
+int convertHostNameToIp(char *hostName, struct sockaddr_in servaddr ) {
+    int result;
+    struct addrinfo hints, *res;
+    bzero(&hints,sizeof(hints));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+
+    result = getaddrinfo(hostName,NULL,&hints,&res);
+    if (result != 0) {
+        printf("getaddrinfo: %s\n", gai_strerror(result));
+        return -1;
+    }
+    else {
+        servaddr.sin_addr.s_addr = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
+        printf("resolved hostname to %s\n", inet_ntoa(servaddr.sin_addr));
+        return 0;
+    }
+
+}
+
 int
 main(int argc, char **argv)
 {
@@ -63,7 +84,12 @@ main(int argc, char **argv)
     servaddr.sin_port = htons(DAYTIME_PORT);  /* daytime server */
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
         printf("inet_pton error for %s\n", argv[1]);
-        exit(1);
+        printf("trying to resolve hostname %s\n", argv[1]);
+
+        int isValidHostName = convertHostNameToIp(argv[1], servaddr);
+        if (isValidHostName == -1) {
+            exit(1);
+        }
     }
 
     if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
