@@ -80,8 +80,7 @@ int printServerName(struct sockaddr_in *servaddr) {
     }
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     int     sockfd, n;
     char    recvline[MAXLINE + 1];

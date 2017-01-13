@@ -5,6 +5,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
 
 #define MAXLINE     4096    /* max text line length */
 #define LISTENQ     1024    /* 2nd argument to listen() */
@@ -35,8 +38,40 @@ int checkPortNumber(char *arg) {
     }
 }
 
-int
-main(int argc, char **argv)
+int getClientIpAddress(int connfd, struct sockaddr_in *client) {
+    //struct sockaddr_in result;
+    int returnStatus;
+    socklen_t length;
+    length = sizeof(*client);
+    char clientIp[INET_ADDRSTRLEN];
+    returnStatus = getpeername(connfd,(struct sockaddr*)client,&length);
+    if (returnStatus != 0) {
+        printf("getpeername: %s\n", gai_strerror(returnStatus));
+        return -1;
+    }
+    else {
+        inet_ntop(AF_INET,&client->sin_addr,clientIp,INET_ADDRSTRLEN);
+        printf("IP Address of Client: %s\n", clientIp);
+        return 0;
+    }
+
+}
+
+int getClientHostName(struct sockaddr_in *client) {
+    int returnStatus;
+    char clientName[1024];
+    returnStatus = getnameinfo((struct sockaddr *)client,sizeof(*client),clientName,sizeof(clientName),NULL,0,0);
+    if (returnStatus != 0) {
+        printf("getnameinfo: %s\n", gai_strerror(returnStatus));
+        return -1;
+    }
+    else {
+        printf("Server Name of Client: %s\n", clientName);
+        return 0;
+    }
+}
+
+int main(int argc, char **argv)
 {
     int     listenfd, connfd;
     struct sockaddr_in servaddr;
@@ -65,8 +100,17 @@ main(int argc, char **argv)
     listen(listenfd, LISTENQ);
 
     for ( ; ; ) {
+        struct sockaddr_in client;
+        bzero(&client,sizeof(client));
         connfd = accept(listenfd, (struct sockaddr *) NULL, NULL);
-
+        int clientIpAddressReturn = getClientIpAddress(connfd,&client);
+        if (clientIpAddressReturn == -1) {
+            printf("Could not get client IP address");
+        }
+        int clientHostNameReturn = getClientHostName(&client);
+        if (clientHostNameReturn == -1) {
+            printf("Could not get client name");
+        }
         ticks = time(NULL);
         snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
         write(connfd, buff, strlen(buff));
