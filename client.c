@@ -64,8 +64,10 @@ void printIpAddress(struct sockaddr_in *servaddr) {
     printf("IP Address: %s\n", inet_ntoa(servaddr->sin_addr));
 }
 
-void printServerName() {
-
+void printServerName(struct sockaddr_in *servaddr) {
+    char serverName[1024];
+    getnameinfo((struct sockaddr *)servaddr,sizeof(*servaddr),serverName,sizeof(serverName),NULL,0,0);
+    printf("Server Name: %s\n", serverName);
 }
 
 int
