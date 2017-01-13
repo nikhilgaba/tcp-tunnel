@@ -61,13 +61,23 @@ int convertHostNameToIp(char *hostName, struct sockaddr_in *servaddr ) {
 }
 
 void printIpAddress(struct sockaddr_in *servaddr) {
-    printf("IP Address: %s\n", inet_ntoa(servaddr->sin_addr));
+    char result[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET,&servaddr->sin_addr,result,INET_ADDRSTRLEN);
+    printf("IP Address: %s\n", result);
 }
 
-void printServerName(struct sockaddr_in *servaddr) {
+int printServerName(struct sockaddr_in *servaddr) {
+    int returnStatus;
     char serverName[1024];
-    getnameinfo((struct sockaddr *)servaddr,sizeof(*servaddr),serverName,sizeof(serverName),NULL,0,0);
-    printf("Server Name: %s\n", serverName);
+    returnStatus = getnameinfo((struct sockaddr *)servaddr,sizeof(*servaddr),serverName,sizeof(serverName),NULL,0,0);
+    if (returnStatus != 0) {
+        printf("getnameinfo: %s\n", gai_strerror(returnStatus));
+        return -1;
+    }
+    else {
+        printf("Server Name: %s\n", serverName);
+        return 0;
+    }
 }
 
 int
@@ -110,7 +120,10 @@ main(int argc, char **argv)
         exit(1);
     }
 
-    printServerName(&servaddr);
+    int serverNameResultCode = printServerName(&servaddr);
+    if (serverNameResultCode == -1) {
+        exit(1);
+    }
     printIpAddress(&servaddr);
     printf("Time: ");
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
