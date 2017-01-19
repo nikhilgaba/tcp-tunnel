@@ -14,8 +14,8 @@
 int DAYTIME_PORT;
 
 int checkNumberOfArguments(int argc) {
-    if (argc != 3) {
-        printf("usage: client <Ipaddress/HostName> <portNumber>\n");
+    if (argc != 3 && argc != 5) {
+        printf("usage: client [<Tunnel Ipaddress/HostName>] [<Tunnel portNumber>] <Server Ipaddress/HostName> <Server portNumber>\n");
         return -1;
     }
     else {
@@ -27,8 +27,8 @@ int checkPortNumber(char *arg) {
     int port_num;
     port_num = atoi(arg);
     if (port_num < 1024 || port_num > 65535) {
-        printf("incorrect port number\n");
-        printf("select port between 1024 and 65535\n");
+        printf("incorrect port numbers\n");
+        printf("select ports between 1024 and 65535\n");
         return -1;
     }
     else {
@@ -80,25 +80,24 @@ int printServerName(struct sockaddr_in *servaddr) {
     }
 }
 
-int main(int argc, char **argv)
-{
+int runDirectConnection (int argc, char **argv) {
     int     sockfd, n;
     char    recvline[MAXLINE + 1];
     struct sockaddr_in servaddr;
 
     int correctNumOfArguments = checkNumberOfArguments(argc);
     if (correctNumOfArguments == -1) {
-        exit(1);
+        return -1;
     }
 
     int correctPortNumber = checkPortNumber(argv[2]);
     if (correctPortNumber == -1) {
-        exit(1);
+        return -1;
     }
 
     if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("socket error\n");
-        exit(1);
+        return -1;
     }
 
     bzero(&servaddr, sizeof(servaddr));
@@ -110,18 +109,18 @@ int main(int argc, char **argv)
 
         int isValidHostName = convertHostNameToIp(argv[1], &servaddr);
         if (isValidHostName == -1) {
-            exit(1);
+            return -1;
         }
     }
 
     if (connect(sockfd, (struct sockaddr *) &servaddr, sizeof(servaddr)) < 0) {
         printf("connect error\n");
-        exit(1);
+        return -1;
     }
 
     int serverNameResultCode = printServerName(&servaddr);
     if (serverNameResultCode == -1) {
-        exit(1);
+        return -1;
     }
     printIpAddress(&servaddr);
     printf("Time: ");
@@ -129,12 +128,46 @@ int main(int argc, char **argv)
         recvline[n] = 0;        /* null terminate */
         if (fputs(recvline, stdout) == EOF) {
             printf("fputs error\n");
-            exit(1);
+            return -1;
         }
     }
     if (n < 0) {
         printf("read error\n");
+        return -1;
+    }
+
+    return 0;
+}
+
+int main(int argc, char **argv)
+{
+    int correctNumOfArguments = checkNumberOfArguments(argc);
+    if (correctNumOfArguments == -1) {
         exit(1);
+    }
+
+    if (argc == 3) {
+        int correctPortNumber = checkPortNumber(argv[2]);
+        if (correctPortNumber == -1) {
+            exit(1);
+        }
+        else {
+            int directConnectionReturnCode = runDirectConnection(argc, argv);
+            if (directConnectionReturnCode == -1) {
+                exit(1);
+            }
+        }
+
+    }
+    else if (argc == 5) {
+        int correctPortNumberTunnel = checkPortNumber(argv[2]);
+        int correctPortNumberServer = checkPortNumber(argv[4]);
+        if (correctPortNumberTunnel == -1 || correctPortNumberServer == -1) {
+            exit(1);
+        }
+        else {
+            //dotcptunnelstuff
+        }
     }
 
     exit(0);

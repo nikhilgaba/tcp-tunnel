@@ -66,7 +66,7 @@ int getClientHostName(struct sockaddr_in *client) {
         return -1;
     }
     else {
-        printf("Server Name of Client: %s\n", clientName);
+        printf("Host Name of Client: %s\n", clientName);
         return 0;
     }
 }
