@@ -10,8 +10,6 @@
 #include <netdb.h>
 
 #define MAXLINE     4096    /* max text line length */
-//#define DAYTIME_PORT 3333
-int DAYTIME_PORT;
 
 int checkNumberOfArguments(int argc) {
     if (argc != 3 && argc != 5) {
@@ -32,7 +30,6 @@ int checkPortNumber(char *arg) {
         return -1;
     }
     else {
-        DAYTIME_PORT = port_num;
         return 0;
     }
 }
@@ -81,9 +78,11 @@ int printServerName(struct sockaddr_in *servaddr) {
 }
 
 int runDirectConnection (char **argv) {
-    int     sockfd, n;
+    int     sockfd, n, serverPort;
     char    recvline[MAXLINE + 1];
     struct sockaddr_in servaddr;
+
+    serverPort = atoi(argv[2]);
 
     if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("socket error\n");
@@ -92,7 +91,7 @@ int runDirectConnection (char **argv) {
 
     bzero(&servaddr, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
-    servaddr.sin_port = htons(DAYTIME_PORT);  /* daytime server */
+    servaddr.sin_port = htons(serverPort);  /* daytime server */
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
         printf("inet_pton error for %s\n", argv[1]);
         printf("trying to resolve hostname %s\n", argv[1]);
