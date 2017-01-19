@@ -80,20 +80,10 @@ int printServerName(struct sockaddr_in *servaddr) {
     }
 }
 
-int runDirectConnection (int argc, char **argv) {
+int runDirectConnection (char **argv) {
     int     sockfd, n;
     char    recvline[MAXLINE + 1];
     struct sockaddr_in servaddr;
-
-    int correctNumOfArguments = checkNumberOfArguments(argc);
-    if (correctNumOfArguments == -1) {
-        return -1;
-    }
-
-    int correctPortNumber = checkPortNumber(argv[2]);
-    if (correctPortNumber == -1) {
-        return -1;
-    }
 
     if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("socket error\n");
@@ -139,6 +129,10 @@ int runDirectConnection (int argc, char **argv) {
     return 0;
 }
 
+int runConnectionViaTunnel(char **argv) {
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
     int correctNumOfArguments = checkNumberOfArguments(argc);
@@ -152,7 +146,7 @@ int main(int argc, char **argv)
             exit(1);
         }
         else {
-            int directConnectionReturnCode = runDirectConnection(argc, argv);
+            int directConnectionReturnCode = runDirectConnection(argv);
             if (directConnectionReturnCode == -1) {
                 exit(1);
             }
