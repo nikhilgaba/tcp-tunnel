@@ -77,6 +77,38 @@ int printServerName(struct sockaddr_in *servaddr) {
     }
 }
 
+int setupConnectionWithTunnel(char *tunnel, char *tunnelPort) {
+    int     sockfd, tunnelServerPort;
+    struct sockaddr_in tunneladdr;
+
+    tunnelServerPort = atoi(tunnelPort);
+
+    if ( (sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        printf("socket error\n");
+        return -1;
+    }
+
+    bzero(&tunneladdr, sizeof(tunneladdr));
+    tunneladdr.sin_family = AF_INET;
+    tunneladdr.sin_port = htons(tunnelServerPort); 
+    if (inet_pton(AF_INET, tunnel, &tunneladdr.sin_addr) <= 0) {
+        printf("inet_pton error for %s\n", tunnel);
+        printf("trying to resolve hostname for tunnel %s\n", tunnel);
+
+        int isValidHostName = convertHostNameToIp(tunnel, &tunneladdr);
+        if (isValidHostName == -1) {
+            return -1;
+        }
+    }
+
+    if (connect(sockfd, (struct sockaddr *) &tunneladdr, sizeof(tunneladdr)) < 0) {
+        printf("connect error\n");
+        return -1;
+    }
+
+    return sockfd;
+}
+
 int runDirectConnection (char **argv) {
     int     sockfd, n, serverPort;
     char    recvline[MAXLINE + 1];
@@ -129,6 +161,14 @@ int runDirectConnection (char **argv) {
 }
 
 int runConnectionViaTunnel(char **argv) {
+    //char    buff[MAXLINE];
+    //memset(buff, '\0', sizeof(buff));
+    //strcpy(buff, "hello");
+    int tunnelConnection = setupConnectionWithTunnel(argv[1], argv[2]);
+    if (tunnelConnection == -1) {
+        return -1;
+    }
+    //write(tunnelConnection, buff, strlen(buff));
     return 0;
 }
 
@@ -159,7 +199,10 @@ int main(int argc, char **argv)
             exit(1);
         }
         else {
-            //dotcptunnelstuff
+            int connectionViaTunnelReturnCode = runConnectionViaTunnel(argv);
+            if (connectionViaTunnelReturnCode == -1) {
+                exit(1);
+            }
         }
     }
 
