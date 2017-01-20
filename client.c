@@ -109,6 +109,29 @@ int setupConnectionWithTunnel(char *tunnel, char *tunnelPort) {
     return sockfd;
 }
 
+int readFromTunnel(int tunnelfd, char *time) {
+    int n;
+    n = read(tunnelfd, time, MAXLINE);
+    if (n < 0) {
+        printf("read error\n");
+        return -1;
+    }
+    else {
+        return 0;
+    }
+}
+
+int closeConnection(int fd) {
+    int closeReturnStatus = close(fd);
+    if (closeReturnStatus == -1) {
+        printf("could not close connection\n");
+        return -1;
+    }
+    else {
+        return 0;
+    }
+}
+
 int runDirectConnection (char **argv) {
     int     sockfd, n, serverPort;
     char    recvline[MAXLINE + 1];
@@ -161,14 +184,18 @@ int runDirectConnection (char **argv) {
 }
 
 int runConnectionViaTunnel(char **argv) {
-    //char    buff[MAXLINE];
-    //memset(buff, '\0', sizeof(buff));
-    //strcpy(buff, "hello");
+    char time[MAXLINE+1];
     int tunnelConnection = setupConnectionWithTunnel(argv[1], argv[2]);
     if (tunnelConnection == -1) {
         return -1;
     }
-    //write(tunnelConnection, buff, strlen(buff));
+
+    int readFromTunnelReturnStatus = readFromTunnel(tunnelConnection, time);
+    if  (readFromTunnelReturnStatus == -1) {
+        return -1;
+    }
+
+    closeConnection(tunnelConnection);
     return 0;
 }
 
