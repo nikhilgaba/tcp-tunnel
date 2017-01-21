@@ -115,9 +115,9 @@ int connectToServer(char *serverName, char *serverPort) {
     return sockfd;
 }
 
-int readFromServer(int serverfd, char *time) {
+int readFromServer(int serverfd, char *timeFromServer) {
     int n;
-    n = read(serverfd, time, MAXLINE);
+    n = read(serverfd, timeFromServer, MAXLINE);
     if (n < 0) {
         printf("read error\n");
         return -1;
@@ -126,6 +126,21 @@ int readFromServer(int serverfd, char *time) {
         return 0;
     }
 
+}
+
+int readFromClientAndParseString(int clientfd, char *serverName, char *serverPort) {
+	int n;
+	char buff[MAXLINE];
+    n = read(clientfd, buff, MAXLINE);
+    if (n < 0) {
+        printf("read error\n");
+        return -1;
+    }
+    else {
+    	strcpy(serverName, strtok(buff, "|"));
+    	strcpy(serverPort, strtok(NULL, "|"));
+        return 0;
+    }
 }
 
 int closeConnection(int fd) {
@@ -139,9 +154,10 @@ int closeConnection(int fd) {
     }
 }
 
-int sendTimeToClient(int clientfd, char *time) {
-    int writeReturnCode = write(clientfd, time, strlen(time));
+int sendTimeToClient(int clientfd, char *timeFromServer) {
+    int writeReturnCode = write(clientfd, timeFromServer, strlen(timeFromServer));
     if (writeReturnCode == -1) {
+    	printf("could not send to client\n");
         return -1;
     }
     else {
@@ -151,7 +167,9 @@ int sendTimeToClient(int clientfd, char *time) {
 
 int main(int argc, char **argv)
 {
-	char time[MAXLINE + 1];
+	char timeFromServer[MAXLINE + 1];
+	char serverName[MAXLINE];
+	char serverPort[MAXLINE];
 
 	int correctNumOfArguments = checkNumberOfArguments(argc);
     if (correctNumOfArguments == -1) {
@@ -165,24 +183,34 @@ int main(int argc, char **argv)
 
     int clientConnection = listenForClient(argv[1]);
 
-    int serverConnection = connectToServer("localhost", "2222");
+    int readFromClientAndParseStringReturnCode = readFromClientAndParseString(clientConnection,serverName,serverPort);
+    if (readFromClientAndParseStringReturnCode == -1) {
+    	closeConnection(clientConnection);
+    	exit(1);
+    }
+
+    int serverConnection = connectToServer(serverName, serverPort);
     if (serverConnection == -1) {
+    	closeConnection(clientConnection);
+    	closeConnection(serverConnection);
         exit(1);
     }
 
-    int readFromServerReturnCode = readFromServer(serverConnection, time);
+    int readFromServerReturnCode = readFromServer(serverConnection, timeFromServer);
     if (readFromServerReturnCode == -1) {
+    	closeConnection(clientConnection);
+    	closeConnection(serverConnection);
         exit(1);
     }
 
     closeConnection(serverConnection);
 
-    int sendTimeReturnStatus = sendTimeToClient(clientConnection,time);
+    int sendTimeReturnStatus = sendTimeToClient(clientConnection,timeFromServer);
     if (sendTimeReturnStatus == -1) {
+    	closeConnection(clientConnection);
         exit(1);
     }
 
     closeConnection(clientConnection);
-
 	exit(0);
 } 

@@ -49,7 +49,6 @@ int convertHostNameToIp(char *hostName, struct sockaddr_in *servaddr ) {
     }
     else {
         servaddr->sin_addr.s_addr = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
-        //printf("resolved hostname to %s\n", inet_ntoa(servaddr->sin_addr));
         printf("resolved hostname\n");
         freeaddrinfo(res);
         return 0;
@@ -109,9 +108,25 @@ int setupConnectionWithTunnel(char *tunnel, char *tunnelPort) {
     return sockfd;
 }
 
-int readFromTunnel(int tunnelfd, char *time) {
+int writeToTunnel(int tunnelfd, char *serverName, char *serverPort) {
+    char sendString[MAXLINE];
+    strcpy(sendString,"\0");
+    strcat(sendString,serverName);
+    strcat(sendString,"|");
+    strcat(sendString,serverPort);
+    int writeReturnCode = write(tunnelfd, sendString, strlen(sendString));
+    if (writeReturnCode == -1) {
+        printf("could not send to tunnel\n");
+        return -1;
+    }
+    else {
+        return 0;
+    }
+}
+
+int readFromTunnel(int tunnelfd, char *timeFromServer) {
     int n;
-    n = read(tunnelfd, time, MAXLINE);
+    n = read(tunnelfd, timeFromServer, MAXLINE);
     if (n < 0) {
         printf("read error\n");
         return -1;
@@ -184,18 +199,27 @@ int runDirectConnection (char **argv) {
 }
 
 int runConnectionViaTunnel(char **argv) {
-    char time[MAXLINE+1];
+    char timeFromServer[MAXLINE+1];
     int tunnelConnection = setupConnectionWithTunnel(argv[1], argv[2]);
     if (tunnelConnection == -1) {
+        closeConnection(tunnelConnection);
         return -1;
     }
 
-    int readFromTunnelReturnStatus = readFromTunnel(tunnelConnection, time);
+    int writeToTunnelReturnStatus = writeToTunnel(tunnelConnection,argv[3],argv[4]);
+    if (writeToTunnelReturnStatus == -1) {
+        closeConnection(tunnelConnection);
+        return -1;
+    }
+
+    int readFromTunnelReturnStatus = readFromTunnel(tunnelConnection, timeFromServer);
     if  (readFromTunnelReturnStatus == -1) {
+        closeConnection(tunnelConnection);
         return -1;
     }
 
     closeConnection(tunnelConnection);
+    printf("nikhil %s\n", timeFromServer);
     return 0;
 }
 
