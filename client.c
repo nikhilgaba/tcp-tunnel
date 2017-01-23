@@ -49,7 +49,7 @@ int convertHostNameToIp(char *hostName, struct sockaddr_in *servaddr ) {
     }
     else {
         servaddr->sin_addr.s_addr = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
-        printf("resolved hostname\n");
+        //printf("resolved hostname\n");
         freeaddrinfo(res);
         return 0;
     }
@@ -76,7 +76,46 @@ int printServerName(struct sockaddr_in *servaddr) {
     }
 }
 
-int setupConnectionWithTunnel(char *tunnel, char *tunnelPort) {
+int getServerName(struct sockaddr_in *servaddr, char *name) {
+    int returnStatus;
+    char serverName[1024];
+    returnStatus = getnameinfo((struct sockaddr *)servaddr,sizeof(*servaddr),serverName,sizeof(serverName),NULL,0,0);
+    if (returnStatus != 0) {
+        printf("getnameinfo: %s\n", gai_strerror(returnStatus));
+        return -1;
+    }
+    else {
+        strcpy(name,serverName);
+        return 0;
+    }
+}
+
+void getIPAddress(struct sockaddr_in *servaddr, char *ip) {
+    char result[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET,&servaddr->sin_addr,result,INET_ADDRSTRLEN);
+    strcpy(ip, result);
+}
+
+void getServerInfo(char *server, char *serverPort, char *serverName, char *serverIP) {
+    int     serverServerPort;
+    struct sockaddr_in servaddr;
+
+    serverServerPort = atoi(serverPort);
+
+    bzero(&servaddr, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(serverServerPort);
+
+    if (inet_pton(AF_INET, server, &servaddr.sin_addr) <= 0) {
+
+        convertHostNameToIp(server, &servaddr);
+    }
+
+    getServerName(&servaddr, serverName);
+    getIPAddress(&servaddr, serverIP);
+}
+
+int setupConnectionWithTunnel(char *tunnel, char *tunnelPort, char *tunnelName, char *tunnelIP) {
     int     sockfd, tunnelServerPort;
     struct sockaddr_in tunneladdr;
 
@@ -91,8 +130,8 @@ int setupConnectionWithTunnel(char *tunnel, char *tunnelPort) {
     tunneladdr.sin_family = AF_INET;
     tunneladdr.sin_port = htons(tunnelServerPort); 
     if (inet_pton(AF_INET, tunnel, &tunneladdr.sin_addr) <= 0) {
-        printf("inet_pton error for %s\n", tunnel);
-        printf("trying to resolve hostname for tunnel %s\n", tunnel);
+        //printf("inet_pton error for %s\n", tunnel);
+        //printf("trying to resolve hostname for tunnel %s\n", tunnel);
 
         int isValidHostName = convertHostNameToIp(tunnel, &tunneladdr);
         if (isValidHostName == -1) {
@@ -104,6 +143,9 @@ int setupConnectionWithTunnel(char *tunnel, char *tunnelPort) {
         printf("connect error\n");
         return -1;
     }
+
+    getServerName(&tunneladdr, tunnelName);
+    getIPAddress(&tunneladdr, tunnelIP);
 
     return sockfd;
 }
@@ -163,8 +205,8 @@ int runDirectConnection (char **argv) {
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(serverPort);  /* daytime server */
     if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
-        printf("inet_pton error for %s\n", argv[1]);
-        printf("trying to resolve hostname %s\n", argv[1]);
+        //printf("inet_pton error for %s\n", argv[1]);
+        //printf("trying to resolve hostname %s\n", argv[1]);
 
         int isValidHostName = convertHostNameToIp(argv[1], &servaddr);
         if (isValidHostName == -1) {
@@ -200,7 +242,16 @@ int runDirectConnection (char **argv) {
 
 int runConnectionViaTunnel(char **argv) {
     char timeFromServer[MAXLINE+1];
-    int tunnelConnection = setupConnectionWithTunnel(argv[1], argv[2]);
+    char tunnelName[MAXLINE];
+    char tunnelIP[MAXLINE];
+
+    char serverName[MAXLINE];
+    char serverIP[MAXLINE];
+
+    getServerInfo(argv[3], argv[4], serverName, serverIP);
+
+
+    int tunnelConnection = setupConnectionWithTunnel(argv[1], argv[2], tunnelName, tunnelIP);
     if (tunnelConnection == -1) {
         closeConnection(tunnelConnection);
         return -1;
@@ -219,7 +270,12 @@ int runConnectionViaTunnel(char **argv) {
     }
 
     closeConnection(tunnelConnection);
-    printf("nikhil %s\n", timeFromServer);
+    printf("Server Name:  %s\n", serverName);
+    printf("IP Address:  %s\n", serverIP);
+    printf("Time: %s\n", timeFromServer);
+    printf("Via Tunnel: %s\n", tunnelName);
+    printf("IP Address: %s\n", tunnelIP);
+    printf("Port Number: %s\n", argv[2]);
     return 0;
 }
 

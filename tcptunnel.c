@@ -52,7 +52,7 @@ int convertHostNameToIp(char *hostName, struct sockaddr_in *servaddr ) {
     else {
         servaddr->sin_addr.s_addr = ((struct sockaddr_in *)(res->ai_addr))->sin_addr.s_addr;
         //printf("resolved hostname to %s\n", inet_ntoa(servaddr->sin_addr));
-        printf("resolved hostname\n");
+        //printf("resolved hostname\n");
         freeaddrinfo(res);
         return 0;
     }
@@ -98,8 +98,8 @@ int connectToServer(char *serverName, char *serverPort) {
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(serverServerPort); 
     if (inet_pton(AF_INET, serverName, &servaddr.sin_addr) <= 0) {
-        printf("inet_pton error for %s\n", serverName);
-        printf("trying to resolve hostname for server %s\n", serverName);
+        //printf("inet_pton error for %s\n", serverName);
+        //printf("trying to resolve hostname for server %s\n", serverName);
 
         int isValidHostName = convertHostNameToIp(serverName, &servaddr);
         if (isValidHostName == -1) {
