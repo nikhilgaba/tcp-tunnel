@@ -60,7 +60,7 @@ int convertHostNameToIp(char *hostName, struct sockaddr_in *servaddr ) {
 }
 
 int listenForClient(char *arg) {
-	int     listenfd, connfd, serverPort;
+	int     listenfd, serverPort;
     struct sockaddr_in servaddr;
 
     serverPort = atoi(arg);
@@ -76,7 +76,12 @@ int listenForClient(char *arg) {
 
     listen(listenfd, LISTENQ);
 
+    return listenfd;
+}
+
+int waitForClientToConnect(int listenfd) {
     struct sockaddr_in client;
+    int connfd;
     bzero(&client,sizeof(client));
     connfd = accept(listenfd, (struct sockaddr *) NULL, NULL);
 
@@ -180,37 +185,44 @@ int main(int argc, char **argv)
     if (correctPortNumber == -1) {
         exit(1);
     }
+    int listenfd = listenForClient(argv[1]);
 
-    int clientConnection = listenForClient(argv[1]);
+    for ( ; ; ) {
+        int clientConnection = waitForClientToConnect(listenfd);
 
-    int readFromClientAndParseStringReturnCode = readFromClientAndParseString(clientConnection,serverName,serverPort);
-    if (readFromClientAndParseStringReturnCode == -1) {
-    	closeConnection(clientConnection);
-    	exit(1);
+        int readFromClientAndParseStringReturnCode = readFromClientAndParseString(clientConnection,
+            serverName,serverPort);
+        if (readFromClientAndParseStringReturnCode == -1) {
+            closeConnection(clientConnection);
+            continue;
+            //exit(1);
+        }
+
+        int serverConnection = connectToServer(serverName, serverPort);
+        if (serverConnection == -1) {
+            closeConnection(clientConnection);
+            closeConnection(serverConnection);
+            continue;
+            //exit(1);
+        }
+
+        int readFromServerReturnCode = readFromServer(serverConnection, timeFromServer);
+        if (readFromServerReturnCode == -1) {
+            closeConnection(clientConnection);
+            closeConnection(serverConnection);
+            continue;
+            //exit(1);
+        }
+
+        closeConnection(serverConnection);
+
+        int sendTimeReturnStatus = sendTimeToClient(clientConnection,timeFromServer);
+        if (sendTimeReturnStatus == -1) {
+            closeConnection(clientConnection);
+            continue;
+            //exit(1);
+        }
+
+        closeConnection(clientConnection);
     }
-
-    int serverConnection = connectToServer(serverName, serverPort);
-    if (serverConnection == -1) {
-    	closeConnection(clientConnection);
-    	closeConnection(serverConnection);
-        exit(1);
-    }
-
-    int readFromServerReturnCode = readFromServer(serverConnection, timeFromServer);
-    if (readFromServerReturnCode == -1) {
-    	closeConnection(clientConnection);
-    	closeConnection(serverConnection);
-        exit(1);
-    }
-
-    closeConnection(serverConnection);
-
-    int sendTimeReturnStatus = sendTimeToClient(clientConnection,timeFromServer);
-    if (sendTimeReturnStatus == -1) {
-    	closeConnection(clientConnection);
-        exit(1);
-    }
-
-    closeConnection(clientConnection);
-	exit(0);
 } 
