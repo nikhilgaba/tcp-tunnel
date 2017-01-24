@@ -14,7 +14,7 @@
 
 int checkNumberOfArguments(int argc) {
     if (argc != 2) {
-        printf("usage: tcptunnel <listen portNumber>\n");
+        printf("usage: tunnel <listen portNumber>\n");
         return -1;
     }
     else {
